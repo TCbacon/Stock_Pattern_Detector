@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>My Flask App</title>
+    <script defer src="{{ url_for('static', filename='frontend.js') }}"></script>
+  </head>
+  <body>
+    <h1>Stock Pattern Detector</h1>
+    <button onclick="generate_stock_csv()">Generate Stock Data CSV</button>
+    <p id="csv-msg-id"></p>
+
+    <div>
+      {% for stock in detected_patterns %}
+      <ul>
+        <li>{{stock,  detected_patterns[stock][0],  detected_patterns[stock][1], detected_patterns[stock][2]}}</li>
+      </ul>
+      {% endfor %}
+    </div>
+  </body>
+</html>
