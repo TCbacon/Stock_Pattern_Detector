@@ -2,19 +2,30 @@
 <html>
   <head>
     <title>My Flask App</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='frontend.css') }}">
     <script defer src="{{ url_for('static', filename='frontend.js') }}"></script>
   </head>
   <body>
     <h1>Stock Pattern Detector</h1>
-    <button onclick="generate_stock_csv()">Generate Stock Data CSV</button>
-    <p id="csv-msg-id"></p>
-
     <div>
-      {% for stock in detected_patterns %}
-      <ul>
-        <li>{{stock,  detected_patterns[stock][0],  detected_patterns[stock][1], detected_patterns[stock][2]}}</li>
+      <p id="market-closed-id"></p>
+      <ul id="stocks-list-id">
+        {% for symb, data in patterns.items() %}
+          {% if data[1] == 'bullish' %}
+            <li class="bullish stock">
+              {{symb,  data[0],  data[1], data[2]}}
+            </li>
+          {% elif data[1] == 'bearish' %}
+            <li class="bearish stock">
+              {{symb,  data[0],  data[1], data[2]}}
+            </li>
+          {% else %}
+            <li class="flat stock">
+              {{symb,  data[0],  data[1], data[2]}}
+            </li>
+          {% endif %}
+        {% endfor %}
       </ul>
-      {% endfor %}
     </div>
   </body>
 </html>
