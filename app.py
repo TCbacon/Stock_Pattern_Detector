@@ -1,7 +1,6 @@
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
 import talib
 import yfinance as yf
-import pandas
 from patterns import candlestick_patterns
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, date
@@ -13,9 +12,11 @@ app = Flask(__name__)
 @dataclass
 class PatternDetect:
 
-    time_period: int = 14 
     detected_patterns_dict: dict = field(default_factory=dict)
-
+    rsi_period: int = 14 
+    interval: int = 60
+    end_date = (datetime.now().date() + timedelta(days=1)).strftime('%Y-%m-%d')
+    start_date = (datetime.now() - timedelta(days=21)).strftime('%Y-%m-%d')
 
     def get_stock_symbols(self):
         
@@ -33,17 +34,14 @@ class PatternDetect:
     @app.route("/detect_patterns")
     def detect_patterns(self):
         
-        end_date = datetime.now().strftime('%Y-%m-%d')
-        start_date = (datetime.now() - timedelta(days=90)).strftime('%Y-%m-%d')
         stock_dict = self.get_stock_symbols()
 
         for symbol in stock_dict:
 
-            df = yf.download(symbol, start=start_date, end=end_date)
+            df = yf.download(symbol, start=self.start_date, end=self.end_date)
             rsi = self.compute_RSI(symbol)
             computed_rsi = f"RSI: {rsi}"
             current_price = self.get_current_price(symbol)
-            print("computing pattern")
 
             for sym, pat in candlestick_patterns.items():
 
@@ -61,41 +59,74 @@ class PatternDetect:
                     else:
                         self.detected_patterns_dict[symbol] = [current_price, 'flat', '-', computed_rsi]
                 except Exception as e:
-                    print('failed on filename: {}'.format(symbol))
+                    print('failed on symbol: {}'.format(symbol))
         
-
         return self.detected_patterns_dict
 
     def compute_RSI(self, symbol):
-     
-        data = yf.download(symbol, period="1d", interval="1m")
-        rsi = talib.RSI(data['Close'], timeperiod=self.time_period)[-1]
-        rsi = round(rsi, 2)
-        return rsi
+        try:
+            data = yf.download(symbol, period="1d", interval="1m")
+            rsi = talib.RSI(data['Close'], timeperiod=self.rsi_period)[-1]
+            rsi = round(rsi, 2)
+            return rsi
+        except:
+            return -1
 
     def get_current_price(self, symbol):
+
         try:
             ticker_data = yf.Ticker(symbol)
             data = ticker_data.history()
             last_quote = data['Close'].iloc[-1]
-            last_quote = round(last_quote, 2)
-            print(symbol, last_quote)
+            
+            last_quote = round(last_quote, 3)
             return last_quote
-        except:
+        except Exception as e:
+            print(e)
             return -1
 
-    def get_stock_data(self):
-        return self.detected_patterns_dict
-
     def run_interval_detection(self):
-        
-        interval = 300
-        thread = threading.Timer(interval, self.run_interval_detection)
+        thread = threading.Timer(self.interval, self.run_interval_detection)
         thread.start()
         self.detect_patterns()
 
-  
+    def get_stock_data(self):
+            return self.detected_patterns_dict 
+    
+    def get_default_settings(self):
+        return {"start_date": self.start_date, "end_date": self.end_date, "rsi_period": self.rsi_period, "interval":self.interval}
+    
+    def update_user_input(self, data):
+
+        try:
+            interval = int(data['interval'])
+            rsi_period = int(data['rsi_period'])
+            stock_period = int(data['stock_period'])
+
+            if interval < 10 or interval > 10000 or rsi_period < 1 or rsi_period > 99 or stock_period < 1 or stock_period > 10000:
+                return jsonify({"message": "Please enter valid numbers"})
+
+            self.interval = interval
+            self.rsi_period = rsi_period
+            self.stock_period = stock_period
+
+            self.end_date = (datetime.now().date() + timedelta(days=1)).strftime('%Y-%m-%d')
+            self.start_date = (datetime.now() - timedelta(days=self.stock_period)).strftime('%Y-%m-%d')
+
+            return jsonify({"message": "Updated successfully", "start_date": self.start_date, "end_date": self.end_date, "rsi_period": self.rsi_period, "interval":self.interval})
+        except:
+            return jsonify({"message": "Something went wrong..."})
+
 pattern = PatternDetect()
+
+@app.route('/get_default_settings')
+def get_default_settings():
+    return pattern.get_default_settings()
+
+@app.route('/user_input', methods=['POST'])
+def update_user_input():
+    data = request.get_json()
+    return pattern.update_user_input(data)
 
 @app.route("/get_latest_data")
 def get_latest_data():
@@ -103,42 +134,15 @@ def get_latest_data():
 
 @app.route("/run_interval_detection")
 def run_interval_detection():
-
-    current_time = datetime.now().time()
-    today = date.today()
-    weekday = today.weekday()
-    start_time: datetime = datetime.now().replace(hour=7, minute=0, second=0, microsecond=0).time()
-    end_time: datetime = datetime.now().replace(hour=13, minute=0, second=0, microsecond=0).time()
-    result = ""
-
-    if current_time >= start_time and current_time <= end_time and weekday < 5:
-        pattern.run_interval_detection()
-    else:
-        result = {
-        'message': 'Market closed'
-        }
-
+    pattern.run_interval_detection()
+    result = {'message': 'Running...'}
     return jsonify(result)
-    
 
 @app.route("/")
 def main():
 
     try:
-        patterns = {"AMC":[4.18,"bearish","Short Line Candle",
-                    "RSI: 42.85622009571722"],
-                    "EBAY":[42.06,"-","-","RSI: 43.880011887433476"],
-                    "META":[195.61,"bearish","Closing Marubozu","RSI: 21.5661590027824"],
-                    "NDAQ":[52.75,"bearish","Spinning Top","RSI: 26.01557634523849"],
-                    "NFLX":[303.5,"bearish","Belt-hold","RSI: 62.466557010345426"],
-                    "NKE":[120.39,"-","-","RSI: 57.00969318529285"],
-                    "SPY":[389.99,"bearish","Harami Pattern","RSI: 51.83827279539456"],
-                    "TSLA":[180.13,"bearish","Engulfing Pattern","RSI: 57.383609501224534"],
-                    "U":[28.32,"bearish","Belt-hold","RSI: 54.99652768469413"],
-                    "UVXY":[6.42,"-","-","RSI: 48.62245083788231"],
-                    "V":[217.39,"bullish","Belt-hold","RSI: 56.85365000076771"]
-                }
-        return render_template("index.html", patterns=patterns)
+        return render_template("index.html")
     except Exception as e:
         return "Oops, 500 Internal Server Error"
     

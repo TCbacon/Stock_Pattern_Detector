@@ -6,26 +6,34 @@
     <script defer src="{{ url_for('static', filename='frontend.js') }}"></script>
   </head>
   <body>
-    <h1>Stock Pattern Detector</h1>
-    <div>
-      <p id="market-closed-id"></p>
-      <ul id="stocks-list-id">
-        {% for symb, data in patterns.items() %}
-          {% if data[1] == 'bullish' %}
-            <li class="bullish stock">
-              {{symb,  data[0],  data[1], data[2]}}
-            </li>
-          {% elif data[1] == 'bearish' %}
-            <li class="bearish stock">
-              {{symb,  data[0],  data[1], data[2]}}
-            </li>
-          {% else %}
-            <li class="flat stock">
-              {{symb,  data[0],  data[1], data[2]}}
-            </li>
-          {% endif %}
-        {% endfor %}
-      </ul>
+    <div class="container">
+      <div class="header-container">
+        <h1>Stock Pattern Detector</h1>
+        <p id="status-msg-id"></p>
+      </div>
+      <div class="form1-container">
+        <form id="form1-id" onsubmit="sendInputInterval(); return false;">
+          <label for="interval-inp-id">Refresh Data Interval (sec)</label>
+          <input id="interval-inp-id" name="interval" type="number" size="10px" min="10" max="10000" placeholder="interval" required/>
+          <label for="rsi-period-inp-id">RSI Period</label>
+          <input id="rsi-period-inp-id" name="rsi_period" type="number" size="10px" min="1" max="99" placeholder="rsi" required/>
+          <label for="data-period-inp-id">Stock Data Period (days)</label>
+          <input id="stock-period-inp-id" name="stock_period" type="number" size="10px" min="1" max="10000" placeholder="days" required/>
+          <button type="submit">Submit</button>
+          <p id="submit-msg-id"></p>
+        </form>
+      </div>
+      <div class="user-settings-container">
+        <p id="interval-text-id"></p>
+        <p id="rsi-period-text-id"></p>
+        <p id="date-range-text-id"></p>
+      </div>
+
+      <div class="stock-list-container">
+        <p id="loading-stock-id">Loading Data...</p>
+        <ul class="stock-list" id="stocks-list-id">
+        </ul>
+      </div>
     </div>
   </body>
 </html>
