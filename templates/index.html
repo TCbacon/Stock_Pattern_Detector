@@ -9,16 +9,19 @@
     <div class="container">
       <div class="header-container">
         <h1>Stock Pattern Detector</h1>
+        <a href="/symbols_file_example" target="_blank">Example CSV Data</a>
         <p id="status-msg-id"></p>
       </div>
       <div class="form1-container">
         <form id="form1-id" onsubmit="sendInputInterval(); return false;">
           <label for="interval-inp-id">Refresh Data Interval (sec)</label>
-          <input id="interval-inp-id" name="interval" type="number" size="10px" min="10" max="10000" placeholder="interval" required/>
+          <input id="interval-inp-id" name="interval" type="number" min="10" max="10000" placeholder="interval" required/>
           <label for="rsi-period-inp-id">RSI Period</label>
-          <input id="rsi-period-inp-id" name="rsi_period" type="number" size="10px" min="1" max="99" placeholder="rsi" required/>
-          <label for="data-period-inp-id">Stock Data Period (days)</label>
-          <input id="stock-period-inp-id" name="stock_period" type="number" size="10px" min="1" max="10000" placeholder="days" required/>
+          <input id="rsi-period-inp-id" name="rsi_period" type="number" min="1" max="99" placeholder="rsi" required/>
+          <label for="stock-period-inp-id">Stock Data Period (days)</label>
+          <input id="stock-period-inp-id" name="stock_period" type="number" min="1" max="10000" placeholder="days" required/>
+          <label for="symbols-file-inp-id">Choose a CSV File</label>
+          <input id="symbols-file-inp-id" name="symbols_file" type="file" accept=".csv" required/>
           <button type="submit">Submit</button>
           <p id="submit-msg-id"></p>
         </form>
@@ -27,6 +30,7 @@
         <p id="interval-text-id"></p>
         <p id="rsi-period-text-id"></p>
         <p id="date-range-text-id"></p>
+        <p id="file-name-text-id"></p>
       </div>
 
       <div class="stock-list-container">

@@ -3,10 +3,12 @@ function setUserInputs(data){
     const stockDateRangeText = document.getElementById("date-range-text-id")
     const rsiPeriodText = document.getElementById("rsi-period-text-id")
     const intervalText = document.getElementById("interval-text-id")
+    const fileNameText = document.getElementById("file-name-text-id")
 
     stockDateRangeText.innerText = `Date Range: ${data["start_date"]} - ${data["end_date"]}`
     rsiPeriodText.innerText = `RSI: ${data["rsi_period"]}`
     intervalText.innerText = `Interval: ${data["interval"]} seconds`
+    fileNameText.innerText = `File: ${data["file_name"]}`
 }
 
 async function retrieve_latest_data(){
@@ -16,22 +18,24 @@ async function retrieve_latest_data(){
 
     try{
 
+        
+        const stockDataList = document.getElementById("stocks-list-id")
         const loadingStockMsg = document.getElementById("loading-stock-id")
 
         let response = await fetch("/get_latest_data", requestOptions)
         let data = await response.json()
 
         if(Object.keys(data).length === 0){
-            loadingStockMsg.innerText = "";
+            stockDataList.innerHTML = "";
+            loadingStockMsg.innerText = "No data to display. Choose a csv file containing stock symbol and name";
             return
         }
 
-        const stockDataList = document.getElementById("stocks-list-id")
         stockDataList.innerHTML = "";
         loadingStockMsg.innerText = "";
 
         for(let key in data){
-            if (data.hasOwnProperty(key)) {
+            if (data.hasOwnProperty(key) && data[key].length == 5) {
                 const li = document.createElement('li')
                 
                 let trend = data[key][1]
@@ -47,7 +51,7 @@ async function retrieve_latest_data(){
                         break
                 }
 
-                li.textContent = `${key}, ${data[key][0]}, ${data[key][1]}, ${data[key][2]}, ${data[key][3]}`
+                li.textContent = `${data[key][0]}, $${data[key][1]}, ${data[key][2]}, ${data[key][3]}, ${data[key][4]}`
                 stockDataList.appendChild(li)
             }
         }
@@ -80,15 +84,9 @@ async function sendInputInterval(){
     const form1 = document.getElementById("form1-id")
     const formData = new FormData(form1)
 
-    const interval = formData.get('interval')
-    const rsi = formData.get('rsi_period')
-    const stock_period = formData.get('stock_period')
-
-
     const requestOptions = {
         method: 'POST',
-        headers:{ "Content-Type": "application/json" },
-        body: JSON.stringify({ interval: interval, rsi_period: rsi, stock_period: stock_period})
+        body: formData
     };
 
     try{
@@ -97,13 +95,14 @@ async function sendInputInterval(){
 
         const submitMsg = document.getElementById("submit-msg-id")
         submitMsg.textContent = data.message
-        setUserInputs(data)
 
+        if(data.status === 200){
+            setUserInputs(data)
+        }
 
         setTimeout(() => {
             submitMsg.textContent = '';
-        }, 3000);
-
+        }, 3000);        
     }
     catch(err){
         console.log(err)
