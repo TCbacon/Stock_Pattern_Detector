@@ -17,8 +17,6 @@ async function retrieve_latest_data(){
       };
 
     try{
-
-        
         const stockDataList = document.getElementById("stocks-list-id")
         const loadingStockMsg = document.getElementById("loading-stock-id")
 
@@ -38,7 +36,7 @@ async function retrieve_latest_data(){
             if (data.hasOwnProperty(key) && data[key].length == 5) {
                 const li = document.createElement('li')
                 
-                let trend = data[key][1]
+                let trend = data[key][2]
                 switch(trend){
                     case 'bullish':
                         li.className = 'bullish stock'

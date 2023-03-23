@@ -22,21 +22,22 @@ class PatternDetect:
     file_name: str = "None"
 
     def get_stock_symbols(self):
-        stock_dict = {}
+        symbols_dict = {}
         for line in self.stock_file:
             line = line.decode('utf-8')
             tokens = re.split(",\s?", line, maxsplit=1)
             if len(tokens) == 2:
-                stock_dict[tokens[0]] = tokens[1]
+                symbols_dict[tokens[0]] = tokens[1]
         
-        return stock_dict
+        return symbols_dict
 
     @app.route("/detect_patterns")
     def detect_patterns(self):
         
-        stock_dict = self.get_stock_symbols()
+        symbols_dict = self.get_stock_symbols()
+        temp_detected_patterns_dict = {}
 
-        for symbol in stock_dict:
+        for symbol in symbols_dict:
 
             ticker = yf.Ticker(symbol)
             hist  = ticker.history(period="1d")
@@ -56,16 +57,17 @@ class PatternDetect:
                     results = dynamic_pattern_call(df['Open'], df['High'], df['Low'], df['Close'])
                     last = results.tail(1).values[0]
                     if last > 0:
-                        self.detected_patterns_dict[symbol] = [stock_dict[symbol], current_price, 'bullish', pat, computed_rsi]
+                        temp_detected_patterns_dict[symbol] = [symbols_dict[symbol], current_price, 'bullish', pat, computed_rsi]
                         break
                     elif last < 0:
-                        self.detected_patterns_dict[symbol] = [stock_dict[symbol], current_price, 'bearish', pat, computed_rsi]
+                        temp_detected_patterns_dict[symbol] = [symbols_dict[symbol], current_price, 'bearish', pat, computed_rsi]
                         break
                     else:
-                        self.detected_patterns_dict[symbol] = [stock_dict[symbol], current_price, 'flat', '-', computed_rsi]
+                        temp_detected_patterns_dict[symbol] = [symbols_dict[symbol], current_price, 'flat', '-', computed_rsi]
                 except Exception as e:
                     print('failed on symbol: {}'.format(symbol))
         
+        self.detected_patterns_dict = temp_detected_patterns_dict
         return self.detected_patterns_dict
 
     def compute_RSI(self, symbol):
