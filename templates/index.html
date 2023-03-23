@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>My Flask App</title>
+    <title>Stock Pattern Detector</title>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='frontend.css') }}">
     <script defer src="{{ url_for('static', filename='frontend.js') }}"></script>
   </head>
@@ -13,9 +13,9 @@
         <p id="status-msg-id"></p>
       </div>
       <div class="form1-container">
-        <form id="form1-id" onsubmit="sendInputInterval(); return false;">
+        <form id="form1-id" onsubmit="sendUserSettings(); return false;">
           <label for="interval-inp-id">Refresh Data Interval (sec)</label>
-          <input id="interval-inp-id" name="interval" type="number" min="10" max="10000" placeholder="interval" required/>
+          <input id="interval-inp-id" name="interval" type="number" min="5" max="10000" placeholder="interval" required/>
           <label for="rsi-period-inp-id">RSI Period</label>
           <input id="rsi-period-inp-id" name="rsi_period" type="number" min="1" max="99" placeholder="rsi" required/>
           <label for="stock-period-inp-id">Stock Data Period (days)</label>

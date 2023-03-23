@@ -77,7 +77,7 @@ async function runIntervalDetection(){
 }
 
 
-async function sendInputInterval(){
+async function sendUserSettings(){
 
     const form1 = document.getElementById("form1-id")
     const formData = new FormData(form1)

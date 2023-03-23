@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 import re
 import threading
+import time
 
 app = Flask(__name__)
 
@@ -31,44 +32,44 @@ class PatternDetect:
         
         return symbols_dict
 
-    @app.route("/detect_patterns")
     def detect_patterns(self):
         
-        symbols_dict = self.get_stock_symbols()
-        temp_detected_patterns_dict = {}
+        while True:
+            time.sleep(self.interval)
+            symbols_dict = self.get_stock_symbols()
+            temp_detected_patterns_dict = {}
 
-        for symbol in symbols_dict:
+            for symbol in symbols_dict:
 
-            ticker = yf.Ticker(symbol)
-            hist  = ticker.history(period="1d")
-            if hist.empty:
-                continue
+                ticker = yf.Ticker(symbol)
+                hist  = ticker.history(period="1d")
+                if hist.empty:
+                    continue
 
-            df = yf.download(symbol, start=self.start_date, end=self.end_date)
-            rsi = self.compute_RSI(symbol)
-            computed_rsi = f"RSI: {rsi}"
-            current_price = self.get_current_price(symbol)
+                df = yf.download(symbol, start=self.start_date, end=self.end_date)
+                rsi = self.compute_RSI(symbol)
+                computed_rsi = f"RSI: {rsi}"
+                current_price = self.get_current_price(symbol)
 
-            for sym, pat in candlestick_patterns.items():
+                for sym, pat in candlestick_patterns.items():
 
-                dynamic_pattern_call = getattr(talib, sym)
+                    dynamic_pattern_call = getattr(talib, sym)
 
-                try:
-                    results = dynamic_pattern_call(df['Open'], df['High'], df['Low'], df['Close'])
-                    last = results.tail(1).values[0]
-                    if last > 0:
-                        temp_detected_patterns_dict[symbol] = [symbols_dict[symbol], current_price, 'bullish', pat, computed_rsi]
-                        break
-                    elif last < 0:
-                        temp_detected_patterns_dict[symbol] = [symbols_dict[symbol], current_price, 'bearish', pat, computed_rsi]
-                        break
-                    else:
-                        temp_detected_patterns_dict[symbol] = [symbols_dict[symbol], current_price, 'flat', '-', computed_rsi]
-                except Exception as e:
-                    print('failed on symbol: {}'.format(symbol))
-        
-        self.detected_patterns_dict = temp_detected_patterns_dict
-        return self.detected_patterns_dict
+                    try:
+                        results = dynamic_pattern_call(df['Open'], df['High'], df['Low'], df['Close'])
+                        last = results.tail(1).values[0]
+                        if last > 0:
+                            temp_detected_patterns_dict[symbol] = [symbols_dict[symbol], current_price, 'bullish', pat, computed_rsi]
+                            break
+                        elif last < 0:
+                            temp_detected_patterns_dict[symbol] = [symbols_dict[symbol], current_price, 'bearish', pat, computed_rsi]
+                            break
+                        else:
+                            temp_detected_patterns_dict[symbol] = [symbols_dict[symbol], current_price, 'flat', '-', computed_rsi]
+                    except Exception as e:
+                        print('failed on symbol: {}'.format(symbol))
+            
+            self.detected_patterns_dict = temp_detected_patterns_dict
 
     def compute_RSI(self, symbol):
         try:
@@ -92,9 +93,8 @@ class PatternDetect:
             return -1
 
     def run_interval_detection(self):
-        thread = threading.Timer(self.interval, self.run_interval_detection)
+        thread = threading.Thread(target=self.detect_patterns)
         thread.start()
-        self.detect_patterns()
 
     def get_stock_data(self):
             return self.detected_patterns_dict 
@@ -110,7 +110,7 @@ class PatternDetect:
             stock_period = int(json_data['stock_period'])
             file = file['symbols_file']
 
-            if interval < 10 or interval > 10000 or rsi_period < 1 or rsi_period > 99 or stock_period < 1 or stock_period > 10000:
+            if interval < 5 or interval > 10000 or rsi_period < 1 or rsi_period > 99 or stock_period < 1 or stock_period > 10000:
                 return jsonify({"message": "Please enter valid numbers", "status":400})
             
             if self.mime_type != file.content_type:
